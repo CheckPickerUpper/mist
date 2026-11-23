@@ -16,7 +16,7 @@ gleam_http = ">= 4.0.0 and < 5.0.0"
 gleam_stdlib = ">= 1.0.0 and < 2.0.0"
 hpack_erl = ">= 0.3.0 and < 1.0.0"
 logging = ">= 1.0.0 and < 2.0.0"
-glisten = ">= 9.0.0 and < 10.0.0"
+glisten = { git = "https://github.com/CheckPickerUpper/glisten.git", ref = "705d4b68797feb2785b89767fbe28680139446bf" }
 exception = ">= 2.1.0 and < 3.0.0"
 gramps = ">= 6.0.0 and < 7.0.0"
 gleam_otp = ">= 1.2.0 and < 2.0.0"

@@ -533,6 +533,33 @@ pub fn start(
   builder: Builder(Connection, ResponseData),
 ) -> Result(actor.Started(Supervisor), actor.StartError) {
   let listener_name = process.new_name("glisten_listener")
+  start_named(builder, listener_name)
+}
+
+/// Starts Mist and returns control of its listening socket.
+pub fn start_with_listener(
+  builder: Builder(Connection, ResponseData),
+) -> Result(glisten.StartedWithListener, glisten.StartWithListenerError) {
+  let listener_name = process.new_name("glisten_listener")
+  use started <- result.try(
+    start_named(builder, listener_name)
+    |> result.map_error(glisten.StartFailed(reason: _)),
+  )
+  glisten.attach_listener_control(started, listener_name, builder.port)
+}
+
+/// Closes the listening socket while accepted connections keep running.
+pub fn stop_accepting(
+  listener: glisten.ListenerControl,
+  within timeout: Int,
+) -> Result(glisten.ServerInfo, glisten.StopAcceptingError) {
+  glisten.stop_accepting(listener, within: timeout)
+}
+
+fn start_named(
+  builder: Builder(Connection, ResponseData),
+  listener_name,
+) -> Result(actor.Started(Supervisor), actor.StartError) {
   let factory_name = process.new_name("mist_factory_supervisor")
 
   supervisor.new(strategy: supervisor.OneForOne)
@@ -559,13 +586,13 @@ pub fn start(
       |> glisten.with_listener_name(listener_name)
       |> glisten.start(builder.port)
       |> result.map(fn(server) {
-        let info = glisten.get_server_info(listener_name, 5000)
-        let ip_address = to_mist_ip_address(info.ip_address)
+        let assert glisten.TcpServerInfo(port:, ip_address:) =
+          glisten.get_server_info(listener_name, 5000)
         let scheme = case option.is_some(builder.tls_options) {
           True -> Https
           False -> Http
         }
-        builder.after_start(info.port, scheme, ip_address)
+        builder.after_start(port, scheme, to_mist_ip_address(ip_address))
         server
       })
     }),
